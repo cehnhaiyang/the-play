@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["node", "chrome"],
+    "skipLibCheck": true,
+    "noEmit": false,
+    "outDir": "./build",
+    "rootDir": "../",
+    "esModuleInterop": true,
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "strict": false,
+    "noImplicitAny": false,
+    "useDefineForClassFields": false,
+    "experimentalDecorators": true,
+    "isolatedModules": false
+  },
+  "include": [
+    "../app/services/AudioService.ts",
+    "../app/services/SpgAiService.ts",
+    "../app/services/LogService.ts",
+    "../app/services/SearchService.ts",
+    "../app/hooks/useAudio.ts",
+    "../shared/core/ai.ts",
+    "../shared/core/**/*.ts",
+    "../shared/meta/**/*.ts",
+    "../extension/src/shared/classify.ts",
+    "../extension/src/shared/inpage.ts",
+    "../extension/src/shared/protocol.ts",
+    "../extension/src/agent/**/*.ts",
+    "../extension/src/offscreen/host.ts",
+    "../extension/src/background/bridge-port.ts"
+  ]
+}

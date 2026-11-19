@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "The Play",
+  "version": "0.1.0",
+  "description": "浏览器侧的嗅探、Agent 与篡改工具；重活（播放、BT、ffmpeg、落盘）交给本机 The Play 应用。",
+  "minimum_chrome_version": "116",
+  "background": {
+    "service_worker": "service-worker.js",
+    "type": "module"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "webRequest",
+    "webNavigation",
+    "scripting",
+    "cookies",
+    "downloads",
+    "debugger",
+    "offscreen",
+    "nativeMessaging"
+  ],
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApYlg9kGI5ay97DzYdD5wZ2hh1D1hp/KEUeaj3k4lU7VJNKJJ7t3QtuHiqB6WMvRX+Z+8iUYdkA9Y7/uxq1GtNlAA/oyJDXeZOPMxpPnNEWBhyeSTxQHTYydj+SlVS/3Tt/C4qHTyBf9afJOaXtohBn1hClrZbH8olFiplHtTO0AHxT+oHnoGrmW3nYeQ6CnCglodTfFWCQ6L/JneNCa6dPnU2oNCPwdvilNG0PlWMGKx4VW3UYls2iUhO1S6mogbI2r7dKAJlAWECQAKNyhVuJeUP96NDTvs+3CDkKpkrfIj8vo8nZyxyX7yO5pkEWvvituQe6BZYe42eTEJ95tGlwIDAQAB",
+  "host_permissions": [
+    "<all_urls>"
+  ]
+}

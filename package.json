@@ -1,0 +1,73 @@
+{
+    "name": "video",
+    "private": true,
+    "version": "1.0.0",
+    "main": "app/main/main.js",
+    "scripts": {
+        "dev": "vite",
+        "build": "vite build && npm run ext:build",
+        "preview": "vite preview",
+        "electron:dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && electron .\"",
+        "electron:build": "npm run build && electron-builder",
+        "test:spg": "node test/index.js",
+        "ext:build": "vite build --config extension/vite.config.mts && node test/manifest.test.js",
+        "ext:dev": "vite build --config extension/vite.config.mts --watch",
+        "ext:check": "node test/manifest.test.js",
+        "ext:typecheck": "tsc --noEmit -p extension/tsconfig.json",
+        "host:install": "node extension/host/install.js",
+        "host:uninstall": "node extension/host/install.js --uninstall",
+        "typecheck": "tsc --noEmit && tsc --noEmit -p extension/tsconfig.json"
+    },
+    "dependencies": {
+        "@tailwindcss/postcss": "^4.3.3",
+        "ffmpeg-static": "^5.3.0",
+        "hls.js": "^1.7.3",
+        "jszip": "^3.10.2",
+        "lucide-react": "^1.48.0",
+        "react": "^19.3.0",
+        "react-dom": "^19.3.0",
+        "webtorrent": "^3.0.21"
+    },
+    "devDependencies": {
+        "@heroicons/react": "^2.2.0",
+        "@types/chrome": "^0.3.5",
+        "@types/node": "^26.6.2",
+        "@types/react": "^19.3.0",
+        "@types/react-dom": "^19.3.0",
+        "@vitejs/plugin-react": "^6.1.1",
+        "autoprefixer": "^10.6.1",
+        "concurrently": "^10.0.5",
+        "electron": "^44.4.5",
+        "electron-builder": "^26.15.3",
+        "postcss": "^8.5.28",
+        "tailwindcss": "^4.3.3",
+        "typescript": "~7.0.2",
+        "vite": "^8.3.0",
+        "wait-on": "^9.1.0"
+    },
+    "build": {
+        "appId": "com.player.app",
+        "productName": "The Play",
+        "asarUnpack": [
+            "node_modules/ffmpeg-static/**/*"
+        ],
+        "files": [
+            "dist/**/*",
+            "app/main/**/*",
+            "shared/core/ai-defaults.json",
+            "node_modules/ffmpeg-static/**/*"
+        ],
+        "directories": {
+            "buildResources": "assets"
+        }
+    },
+    "allowScripts": {
+        "bufferutil@4.1.0": true,
+        "electron-winstaller@5.4.0": true,
+        "ffmpeg-static@5.3.0": true,
+        "node-datachannel@0.32.3": true,
+        "utf-8-validate@6.0.6": true,
+        "utp-native@2.5.3": true,
+        "ip-set": false
+    }
+}

@@ -1,0 +1,168 @@
+/*
+ * 悬浮球窗口的样式。
+ *
+ * ## 与主界面那份分开的原因
+ *
+ * 主界面（index.css）的 body 有一层深色径向渐变底色，那是给 1280×800 的
+ * 正常窗口用的。球窗口是 `transparent: true` 的无边框窗口，**body 必须完全透明**
+ * —— 一旦继承那层底色，球的圆角外面就会出现一个不透明的方块，
+ * 也就是"球变成了方形"。
+ *
+ * ## 为什么不能用 Tailwind 的 preflight 去重置
+ *
+ * preflight 会把 `body { margin: 0 }` 之外的东西也一起改（比如 button 的
+ * 默认样式），那部分我们确实要。但底色这条必须显式写回来，且优先级要够。
+ * 所以这里在 @layer base 里直接写，和主界面那份同一个层级、互不干扰 ——
+ * 两份 CSS 各自只被打进自己那个页面。
+ */
+@import "tailwindcss";
+
+@layer base {
+    :root {
+        color-scheme: dark;
+    }
+
+    html,
+    body,
+    #root {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        /* 透明窗口的底色。删掉这行 → 球外面套一个方块 */
+        background: transparent;
+        overflow: hidden;
+    }
+
+    body {
+        font-family:
+            "Segoe UI",
+            "PingFang SC",
+            "Microsoft YaHei",
+            sans-serif;
+    }
+
+    * {
+        box-sizing: border-box;
+    }
+}
+
+/*
+ * 隐藏滚动条。
+ *
+ * 与 index.css 里的同名类**是两份**，因为两个页面的 CSS 是各自独立的产物
+ * （球的两个入口都只经 orb-kit.tsx 引这一份）—— 从 index.css import 会把
+ * 整个主界面的样式拖进球的窗口。主界面那份的注释也说了同一个理由。
+ *
+ * 用在标签栏上：几十个标签页横向滚动时，一条 6px 的滚动条会一直挂在
+ * 那一行下面，看起来像分隔线，而它是可以拖的。
+ */
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
+
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+/* ========================================================================== */
+/* 球的形态                                                                    */
+/* ========================================================================== */
+
+/*
+ * 呼吸光晕。
+ *
+ * 只补间 scale，**不补间 opacity** —— CSS 动画优先级高于普通声明，
+ * 关键帧里写了 opacity 就会把 hover 的透明度变化永久压死，
+ * 表现为"悬停没反应"。这个坑在插件那版球上踩过一次。
+ */
+@keyframes orb-breath {
+    0%,
+    100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.06);
+    }
+}
+
+.animate-orb-breath {
+    animation: orb-breath 3.5s ease-in-out infinite;
+}
+
+/*
+ * 柔光：靠 mask 的径向淡出，**不用 blur 滤镜**。
+ *
+ * ## 为什么不能用 blur
+ *
+ * `blur()` 会把内容向元素**外**扩散，而球窗口只有 64×64。扩散到窗口边界
+ * 之外的部分会被窗口**裁掉**，裁出来的是一条直角边 —— 于是球外面套了一个
+ * 淡淡的方块。
+ *
+ * 这个故障在 DOM 里完全看不出来（DOM 里就是一个 `rounded-full` 的 span，
+ * 永远"正确"），只有截屏看像素才会发现。而且它和窗口大小耦合：把球改大、
+ * 把 blur 调大、或把呼吸动画的幅度调大，任何一项都会让它重新出现。
+ *
+ * ## mask 为什么不会
+ *
+ * 径向渐变在**元素内部**就淡到全透明，元素之外什么都没有 ——
+ * 物理上不存在"被裁掉的内容"。所以它对窗口尺寸、动画幅度都不敏感。
+ *
+ * 68% 这个位置是按窗口算的：元素铺满 64px（半径 32），
+ * 68% 即 21.8px 处已全透明，距窗口边缘还有 10px 余量。
+ * 光晕只画到球体边缘内侧，不越界。
+ */
+.orb-halo {
+    -webkit-mask-image: radial-gradient(
+        circle at 50% 50%,
+        #000 0%,
+        rgba(0, 0, 0, 0.6) 40%,
+        transparent 68%
+    );
+    mask-image: radial-gradient(
+        circle at 50% 50%,
+        #000 0%,
+        rgba(0, 0, 0, 0.6) 40%,
+        transparent 68%
+    );
+}
+
+/* 晶透外壳的高光弧：一条静态渐变，不需要动画 */
+.orb-specular {
+    background-image: radial-gradient(circle at 32% 25%, rgba(255, 255, 255, 0.5), transparent 58%);
+}
+
+/*
+ * 展开 / 收起的形变。
+ *
+ * 只补间 border-radius 与 opacity，**不补间 width/height** ——
+ * 窗口尺寸是主进程改的（setBounds），CSS 这边补间一个由窗口决定的尺寸
+ * 只会让内容与窗口不同步，出现"面板已经展开但内容还是球的大小"。
+ */
+@keyframes orb-unfold {
+    from {
+        opacity: 0;
+        transform: scale(0.92);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-orb-unfold {
+    animation: orb-unfold 160ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/*
+ * 尊重系统的"减少动态效果"。
+ *
+ * 必须写复合选择器而不是裸类名：animation-name 挂在 `.animate-orb-breath` 上，
+ * 特异性已经确定，靠通配或继承压不住。
+ */
+@media (prefers-reduced-motion: reduce) {
+    .animate-orb-breath,
+    .animate-orb-unfold {
+        animation: none;
+    }
+}

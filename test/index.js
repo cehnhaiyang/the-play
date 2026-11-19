@@ -1,0 +1,123 @@
+'use strict';
+/**
+ * SPG 引擎测试入口。
+ *
+ * 先调用 tsc 把引擎（app/services/AudioService.ts + meta）编译成 CommonJS 到 build/，
+ * 再用 Web Audio 模拟层在 Node 里跑真实的解析/调度/合成流程。
+ *
+ * 为什么不用浏览器跑：这些 bug（时间点倒流、自动化越界、总时长漏算）
+ * 在浏览器里只会表现为"听感不对"，很难定位；在 Node 里可以直接断言时间线。
+ */
+const { execFileSync } = require('child_process');
+const path = require('path');
+const fs = require('fs');
+
+const here = __dirname;
+const tsc = path.join(here, '..', 'node_modules', '.bin', 'tsc.cmd');
+const tscFallback = path.join(here, '..', 'node_modules', 'typescript', 'bin', 'tsc');
+
+const runTsc = () => {
+  const args = ['-p', path.join(here, 'tsconfig.json')];
+  try {
+    if (fs.existsSync(tsc)) {
+      execFileSync(tsc, args, { stdio: 'inherit', cwd: here });
+      return;
+    }
+  } catch (e) {
+    // .cmd 在非 Windows 环境不可执行，回落到 node 直接跑 tsc
+  }
+  execFileSync(process.execPath, [tscFallback, ...args], { stdio: 'inherit', cwd: here });
+};
+
+const main = async () => {
+  console.log('编译引擎到 test/build/ ...');
+  runTsc();
+
+  console.log('\n=== 引擎回归测试 ===');
+  const engineOk = await require('./engine.test.js').run();
+
+  console.log('\n=== 向后兼容测试 ===');
+  const compatOk = require('./compat.test.js').run();
+
+  console.log('\n=== AI 绘本测试 ===');
+  const aibookOk = require('./aibook.test.js').run();
+
+  console.log('\n=== AI 服务商与档位映射 ===');
+  const aiproviderMod = require('./aiprovider.test.js');
+  const aiproviderOk = aiproviderMod.run();
+  const aiwireOk = await aiproviderMod.runAsync();
+
+  console.log('\n=== 搜索引擎测试 ===');
+  const searchMod = require('./search.test.js');
+  const searchSyncOk = searchMod.run();
+  const searchAsyncOk = await searchMod.runAsync();
+
+  console.log('\n=== 主进程静态自检 ===');
+  const mainStaticOk = require('./mainstatic.test.js').run();
+
+  console.log('\n=== Agent 工具派发 ===');
+  const agentToolsOk = await require('./agenttools.test.js').run();
+
+  console.log('\n=== 运行日志 ===');
+  const logsOk = require('./logs.test.js').run();
+
+  console.log('\n=== 桥契约 ===');
+  const bridgeOk = require('./bridge.test.js').run();
+
+  console.log('\n=== 桥·插件请求方向 ===');
+  const bridgeAppOk = await require('./bridgeapp.test.js').runAsync();
+
+  console.log('\n=== 插件嗅探分类 ===');
+  const extSnifferOk = require('./extsniffer.test.js').run();
+
+  console.log('\n=== 插件模型配置 ===');
+  const extModelOk = await require('./extmodel.test.js').runAsync();
+
+  console.log('\n=== 插件产物自检 ===');
+  const manifestOk = require('./manifest.test.js').run();
+
+  console.log('\n=== 开发脚本自检 ===');
+  const scriptsOk = require('./scripts.test.js').run();
+
+  console.log('\n=== E-Hentai 站点适配 ===');
+  const ehentaiOk = require('./ehentai.test.js').run();
+
+  console.log('\n=== 资源单位与分类 ===');
+  const resourceUnitOk = require('./resourceunit.test.js').run();
+
+  console.log('\n=== 保存收尾口径 ===');
+  const saveOutcomeOk = require('./saveoutcome.test.js').run();
+
+  console.log('\n=== ffmpeg 诊断 ===');
+  const ffmpegDiagOk = require('./ffmpegdiag.test.js').run();
+
+  console.log('\n=== ffmpeg 代理配置 ===');
+  const ffmpegProxyOk = require('./ffmpegproxy.test.js').run();
+
+  console.log('\n=== HLS 清单签名 ===');
+  const hlsSignOk = await require('./hlssign.test.js').run();
+
+  console.log('\n=== 侧栏性能与刷新 ===');
+  const sidebarOk = require('./sidebar.test.js').run();
+
+  console.log('\n=== 媒体库（目录即列表） ===');
+  const libraryOk = require('./library.test.js').run();
+
+  console.log('\n=== 本地起播 ===');
+  const localPlaybackOk = require('./localplayback.test.js').run();
+
+  if (!engineOk || !compatOk || !aibookOk || !aiproviderOk || !aiwireOk || !searchSyncOk || !searchAsyncOk
+    || !mainStaticOk || !agentToolsOk
+    || !logsOk || !bridgeOk || !bridgeAppOk || !extSnifferOk || !extModelOk || !manifestOk || !scriptsOk
+    || !ehentaiOk || !resourceUnitOk || !saveOutcomeOk || !ffmpegDiagOk || !ffmpegProxyOk || !hlsSignOk || !sidebarOk || !libraryOk || !localPlaybackOk) {
+    process.exitCode = 1;
+    console.log('\n存在失败用例。');
+  } else {
+    console.log('\n全部通过。');
+  }
+};
+
+main().catch((e) => {
+  console.error(e);
+  process.exitCode = 1;
+});
